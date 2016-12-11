@@ -1,25 +1,84 @@
 ---
-title: "Reproducible Research: Peer Assessment 1"
-output: 
+title: 'Reproducible Research: Peer Assessment 1'
+output:
   html_document:
-    keep_md: true
+    keep_md: yes
+  pdf_document: default
 ---
 
 
 ## Loading and preprocessing the data
-
-
+```{r}
+data_raw<-read.csv("activity.csv")
+data<-na.omit(data_raw)
+```
 
 ## What is mean total number of steps taken per day?
-
-
+```{r}
+total_steps_pday<-length(data$steps)
+mean_steps_pday<-mean(data$steps)
+median_steps_pday<-median(data$steps)
+total_steps_pday
+mean_steps_pday
+median_steps_pday
+hist(data$steps,main="Histogram of steps per day",xlab="Steps in one day")
+```
 
 ## What is the average daily activity pattern?
-
-
+```{r include=FALSE}
+library("dplyr")
+```
+```{r}
+pattern<-data %>% group_by(interval) %>% summarize(mean(steps))
+plot(pattern$interval,pattern$`mean(steps)`,type="l",xlab="Interval",ylab="Mean Steps")
+paste(pattern[pattern$`mean(steps)`==max(pattern$`mean(steps)`),"interval"])
+```
 
 ## Imputing missing values
+```{r}
+data_imputed<-data_raw
+length(data_imputed[,1])
+length(which(complete.cases(data_imputed)))
+for(i in 1:length(data_imputed[,1])) {
+  if(is.na((data_imputed[i,1]))) {
+    if(is.na(data_imputed[i,1]<-mean(data[data$interval==data[i,3],1])))
+    {
+      data_imputed[i,1]<-0
+    }
+    else 
+    {
+      data_imputed[i,1]<-mean(data[data$interval==data[i,3],1])
+    }
+  }
+}
+length(which(complete.cases(data_imputed)))
 
+total_steps_pday<-length(data_imputed$steps)
+mean_steps_pday<-mean(data_imputed$steps)
+median_steps_pday<-median(data_imputed$steps)
+total_steps_pday
+mean_steps_pday
+median_steps_pday
+hist(data$steps,main="Histogram of steps per day",xlab="Steps in one day")
 
+```
 
 ## Are there differences in activity patterns between weekdays and weekends?
+```{r}
+for(i in 1:length(data_imputed[,1])) {
+  if(weekdays(as.Date(data_imputed[i,2]))=="Saturday" | weekdays(as.Date(data_imputed[i,2]))=="Sunday") {
+    data_imputed$weekday[i]<-"weekend"
+  }
+  else {
+    data_imputed$weekday[i]<-"weekday"
+  }
+}
+weekends<-data_imputed[data_imputed$weekday=="weekend",]
+weekdays<-data_imputed[data_imputed$weekday=="weekday",]
+  
+sum_weekend<-weekends %>% group_by(interval) %>% summarize(mean(steps))
+sum_weekday<-weekdays %>% group_by(interval) %>% summarize(mean(steps))
+plot(sum_weekend$interval,sum_weekend$`mean(steps)`,type="l",col="red",xlab="Interval",ylab="Mean Steps")
+lines(sum_weekday$interval,sum_weekday$`mean(steps)`,col="green")
+
+```
